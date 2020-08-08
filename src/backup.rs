@@ -13,7 +13,7 @@
 // limitations under the License.
 //
 
-use crate::{ffi, Error, DB};
+use crate::{db::GetDBHandle, ffi, handle::Handle, Error};
 
 use libc::c_int;
 use std::ffi::CString;
@@ -58,10 +58,11 @@ impl BackupEngine {
         Ok(BackupEngine { inner: be })
     }
 
-    pub fn create_new_backup(&mut self, db: &DB) -> Result<(), Error> {
+    pub fn create_new_backup<G: GetDBHandle>(&mut self, get_db: &G) -> Result<(), Error> {
         unsafe {
             ffi_try!(ffi::rocksdb_backup_engine_create_new_backup(
-                self.inner, db.inner,
+                self.inner,
+                get_db.get_db_handle().handle(),
             ));
             Ok(())
         }
