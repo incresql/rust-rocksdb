@@ -22,6 +22,7 @@ use crate::{
     compaction_filter::{self, CompactionFilterCallback, CompactionFilterFn},
     compaction_filter_factory::{self, CompactionFilterFactory},
     comparator::{self, ComparatorCallback, CompareFn},
+    db::GetDBHandle,
     ffi,
     merge_operator::{
         self, full_merge_callback, partial_merge_callback, MergeFn, MergeOperatorCallback,
@@ -181,8 +182,7 @@ impl Env {
 /// # Examples
 ///
 /// ```
-/// use rocksdb::{Options, DB};
-/// use rocksdb::DBCompactionStyle;
+/// use rocksdb::{prelude::*, DBCompactionStyle};
 ///
 /// fn badly_tuned_for_somebody_elses_disk() -> DB {
 ///    let path = "path/for/rocksdb/storageX";
@@ -218,7 +218,7 @@ pub struct Options {
 /// Making an unsafe write of a batch:
 ///
 /// ```
-/// use rocksdb::{DB, Options, WriteBatch, WriteOptions};
+/// use rocksdb::{prelude::*, WriteBatch};
 ///
 /// let path = "_path_for_rocksdb_storageY1";
 /// {
@@ -247,7 +247,7 @@ pub struct WriteOptions {
 /// Manually flushing the memtable:
 ///
 /// ```
-/// use rocksdb::{DB, Options, FlushOptions};
+/// use rocksdb::{prelude::*, FlushOptions};
 ///
 /// let path = "_path_for_rocksdb_storageY2";
 /// {
@@ -2781,7 +2781,10 @@ impl ReadOptions {
     /// Sets the snapshot which should be used for the read.
     /// The snapshot must belong to the DB that is being read and must
     /// not have been released.
-    pub(crate) fn set_snapshot(&mut self, snapshot: &Snapshot) {
+    pub(crate) fn set_snapshot<T>(&mut self, snapshot: &Snapshot<T>)
+    where
+        T: GetDBHandle,
+    {
         unsafe {
             ffi::rocksdb_readoptions_set_snapshot(self.inner, snapshot.inner);
         }

@@ -18,7 +18,7 @@
 //! # Examples
 //!
 //! ```
-//! use rocksdb::{DB, Options};
+//! use rocksdb::prelude::*;
 //! // NB: db is automatically closed at end of lifetime
 //! let path = "_path_for_rocksdb_storage";
 //! {
@@ -37,7 +37,7 @@
 //! Opening a database and a single column family with custom options:
 //!
 //! ```
-//! use rocksdb::{DB, ColumnFamilyDescriptor, Options};
+//! use rocksdb::{prelude::*, ColumnFamilyDescriptor};
 //!
 //! let path = "_path_for_rocksdb_storage_with_cfs";
 //! let mut cf_opts = Options::default();
@@ -73,6 +73,8 @@
 
 #[macro_use]
 mod ffi_util;
+#[macro_use]
+pub mod ops;
 
 pub mod backup;
 pub mod checkpoint;
@@ -84,8 +86,10 @@ mod db;
 mod db_iterator;
 mod db_options;
 mod db_pinnable_slice;
+mod handle;
 pub mod merge_operator;
 pub mod perf;
+pub mod prelude;
 mod slice_transform;
 mod snapshot;
 mod sst_file_writer;
@@ -161,9 +165,8 @@ impl fmt::Display for Error {
 #[cfg(test)]
 mod test {
     use super::{
-        BlockBasedOptions, ColumnFamily, ColumnFamilyDescriptor, DBIterator, DBRawIterator,
-        IngestExternalFileOptions, Options, PlainTableFactoryOptions, ReadOptions, Snapshot,
-        SstFileWriter, WriteOptions, DB,
+        prelude::*, BlockBasedOptions, ColumnFamilyDescriptor, DBIterator, DBRawIterator,
+        IngestExternalFileOptions, PlainTableFactoryOptions, Snapshot, SstFileWriter,
     };
 
     #[test]
@@ -178,7 +181,7 @@ mod test {
         is_send::<DB>();
         is_send::<DBIterator<'_>>();
         is_send::<DBRawIterator<'_>>();
-        is_send::<Snapshot>();
+        is_send::<Snapshot<DB>>();
         is_send::<Options>();
         is_send::<ReadOptions>();
         is_send::<WriteOptions>();
@@ -199,7 +202,7 @@ mod test {
         }
 
         is_sync::<DB>();
-        is_sync::<Snapshot>();
+        is_sync::<Snapshot<DB>>();
         is_sync::<Options>();
         is_sync::<ReadOptions>();
         is_sync::<WriteOptions>();
