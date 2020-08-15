@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use crate::db::GetDBHandle;
 use crate::handle::Handle;
 use crate::ops::Write;
 use crate::write_batch::{writebatch_delete_callback, writebatch_put_callback, WriteBatchWritable};
-use crate::{ffi, ColumnFamily, Error, WriteBatchIterator, WriteOptions};
+use crate::{ffi, ColumnFamily, Error, ReadOptions, WriteBatchIterator, WriteOptions, DB};
 use libc::{c_char, c_void, size_t};
 
 /// An atomic batch of write operations.
@@ -227,6 +228,40 @@ impl WriteBatchWithIndex {
             ffi::rocksdb_writebatch_wi_clear(self.inner);
         }
     }
+
+    /// Get from the db, first looking at the write batch
+    pub fn get<K: AsRef<[u8]>>(&self, db: &DB, key: K) -> Result<Option<Slice>, Error> {
+        self.get_opt(db, key, &ReadOptions::default())
+    }
+
+    /// Get from the db, first looking at the write batch
+    pub fn get_opt<K: AsRef<[u8]>>(
+        &self,
+        db: &DB,
+        key: K,
+        readopts: &ReadOptions,
+    ) -> Result<Option<Slice>, Error> {
+        let key = key.as_ref();
+        let mut val_len = 0_usize;
+        unsafe {
+            let val = ffi_try!(ffi::rocksdb_writebatch_wi_get_from_batch_and_db(
+                self.inner,
+                db.get_db_handle().handle(),
+                readopts.inner,
+                key.as_ptr() as *const c_char,
+                key.len() as size_t,
+                &mut val_len as *mut size_t
+            ));
+            if val.is_null() {
+                Ok(None)
+            } else {
+                let slice = Slice {
+                    bytes: std::slice::from_raw_parts(val as *const u8, val_len),
+                };
+                Ok(Some(slice))
+            }
+        }
+    }
 }
 
 impl WriteBatchWritable for WriteBatchWithIndex {
@@ -258,5 +293,24 @@ impl Default for WriteBatchWithIndex {
 impl Drop for WriteBatchWithIndex {
     fn drop(&mut self) {
         unsafe { ffi::rocksdb_writebatch_wi_destroy(self.inner) }
+    }
+}
+
+/// Bytes that rocks has allocated for us. We must use their free function
+/// to free the data
+#[derive(Debug, Clone)]
+pub struct Slice {
+    bytes: &'static [u8],
+}
+
+impl AsRef<[u8]> for Slice {
+    fn as_ref(&self) -> &[u8] {
+        self.bytes
+    }
+}
+
+impl Drop for Slice {
+    fn drop(&mut self) {
+        unsafe { ffi::rocksdb_free(self.bytes.as_ptr() as *mut c_void) }
     }
 }

@@ -14,7 +14,11 @@
 
 use pretty_assertions::assert_eq;
 
+use rocksdb::prelude::*;
 use rocksdb::{WriteBatch, WriteBatchWithIndex};
+
+mod util;
+use util::DBPath;
 
 #[test]
 fn test_write_batch_clear() {
@@ -34,4 +38,23 @@ fn test_write_batch_with_index_clear() {
     batch.clear();
     assert_eq!(batch.len(), 0);
     assert!(batch.is_empty());
+}
+
+#[test]
+fn test_write_batch_with_index_get() {
+    let path = DBPath::new("_rust_rocksdb_write_batch_with_index_get");
+    {
+        let db = DB::open_default(&path).unwrap();
+        db.put(b"k1", b"v1111").unwrap();
+        let mut batch = WriteBatchWithIndex::default();
+        batch.put(b"k2", b"v2222");
+        assert_eq!(
+            batch.get(&db, b"k1").unwrap().unwrap().as_ref(),
+            b"v1111".as_ref()
+        );
+        assert_eq!(
+            batch.get(&db, b"k2").unwrap().unwrap().as_ref(),
+            b"v2222".as_ref()
+        );
+    }
 }
