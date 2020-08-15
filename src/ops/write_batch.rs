@@ -15,29 +15,34 @@
 
 use ambassador::delegatable_trait;
 
-use crate::{ffi, handle::Handle, Error, WriteBatch, WriteOptions};
+use crate::write_batch::WriteBatchWritable;
+use crate::{ffi, handle::Handle, Error, WriteOptions};
 
 #[delegatable_trait]
 pub trait WriteBatchWrite {
-    fn write(&self, batch: WriteBatch) -> Result<(), Error>;
+    fn write<B: WriteBatchWritable>(&self, batch: B) -> Result<(), Error>;
 
-    fn write_without_wal(&self, batch: WriteBatch) -> Result<(), Error>;
+    fn write_without_wal<B: WriteBatchWritable>(&self, batch: B) -> Result<(), Error>;
 }
 
 #[delegatable_trait]
 pub trait WriteBatchWriteOpt {
-    fn write_opt(&self, batch: WriteBatch, writeopts: &WriteOptions) -> Result<(), Error>;
+    fn write_opt<B: WriteBatchWritable>(
+        &self,
+        batch: B,
+        writeopts: &WriteOptions,
+    ) -> Result<(), Error>;
 }
 
 impl<T> WriteBatchWrite for T
 where
     T: WriteBatchWriteOpt,
 {
-    fn write(&self, batch: WriteBatch) -> Result<(), Error> {
+    fn write<B: WriteBatchWritable>(&self, batch: B) -> Result<(), Error> {
         self.write_opt(batch, &WriteOptions::default())
     }
 
-    fn write_without_wal(&self, batch: WriteBatch) -> Result<(), Error> {
+    fn write_without_wal<B: WriteBatchWritable>(&self, batch: B) -> Result<(), Error> {
         let mut wo = WriteOptions::new();
         wo.disable_wal(true);
         self.write_opt(batch, &wo)
@@ -48,14 +53,11 @@ impl<T> WriteBatchWriteOpt for T
 where
     T: Handle<ffi::rocksdb_t> + super::Write,
 {
-    fn write_opt(&self, batch: WriteBatch, writeopts: &WriteOptions) -> Result<(), Error> {
-        unsafe {
-            ffi_try!(ffi::rocksdb_write(
-                self.handle(),
-                writeopts.inner,
-                batch.inner
-            ));
-        }
-        Ok(())
+    fn write_opt<B: WriteBatchWritable>(
+        &self,
+        batch: B,
+        writeopts: &WriteOptions,
+    ) -> Result<(), Error> {
+        batch.write_opt(self, writeopts)
     }
 }

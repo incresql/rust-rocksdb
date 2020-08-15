@@ -33,9 +33,10 @@ use crate::{
         write_batch::WriteBatchWriteOpt,
         GetColumnFamilies,
     },
+    write_batch::WriteBatchWritable,
     ColumnFamily, ColumnFamilyDescriptor, CompactOptions, DBIterator, DBPinnableSlice,
     DBRawIterator, DBWALIterator, Error, FlushOptions, IngestExternalFileOptions, IteratorMode,
-    Options, ReadOptions, Snapshot, WriteBatch, WriteOptions, DEFAULT_COLUMN_FAMILY_NAME,
+    Options, ReadOptions, Snapshot, WriteOptions, DEFAULT_COLUMN_FAMILY_NAME,
 };
 
 use ambassador::Delegate;

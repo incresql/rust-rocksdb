@@ -94,6 +94,7 @@ mod slice_transform;
 mod snapshot;
 mod sst_file_writer;
 mod write_batch;
+mod write_batch_with_index;
 
 pub use crate::{
     column_family::{ColumnFamily, ColumnFamilyDescriptor, DEFAULT_COLUMN_FAMILY_NAME},
@@ -114,6 +115,7 @@ pub use crate::{
     snapshot::Snapshot,
     sst_file_writer::SstFileWriter,
     write_batch::{WriteBatch, WriteBatchIterator},
+    write_batch_with_index::WriteBatchWithIndex,
 };
 
 use librocksdb_sys as ffi;

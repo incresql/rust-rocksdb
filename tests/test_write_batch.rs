@@ -14,11 +14,21 @@
 
 use pretty_assertions::assert_eq;
 
-use rocksdb::WriteBatch;
+use rocksdb::{WriteBatch, WriteBatchWithIndex};
 
 #[test]
 fn test_write_batch_clear() {
     let mut batch = WriteBatch::default();
+    batch.put(b"1", b"2");
+    assert_eq!(batch.len(), 1);
+    batch.clear();
+    assert_eq!(batch.len(), 0);
+    assert!(batch.is_empty());
+}
+
+#[test]
+fn test_write_batch_with_index_clear() {
+    let mut batch = WriteBatchWithIndex::default();
     batch.put(b"1", b"2");
     assert_eq!(batch.len(), 1);
     batch.clear();
